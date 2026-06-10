@@ -30,11 +30,12 @@ type Generator struct {
 func (x *Generator) Generate() error {
 	// Context holds data for template execution
 	type Context struct {
-		Engine       string
-		Schema       string
-		Table        *Table
-		QueryInclude map[string]bool
-		QueryExclude map[string]bool
+		Engine              string
+		Schema              string
+		Table               *Table
+		QueryInclude        map[string]bool
+		QueryExclude        map[string]bool
+		InsertColumnExclude map[string]bool
 	}
 
 	opts := map[string]any{
@@ -153,6 +154,15 @@ func (x *Generator) Generate() error {
 			}
 			return isDefault || ctx.QueryInclude[queryName]
 		},
+		"insert_columns": func(ctx Context) []Column {
+			columns := make([]Column, 0, len(ctx.Table.Columns))
+			for _, column := range ctx.Table.Columns {
+				if insertColumnSelected(ctx.InsertColumnExclude, ctx.Schema, ctx.Table.Name, column.Name) {
+					columns = append(columns, column)
+				}
+			}
+			return columns
+		},
 	}
 
 	// Open the template file
@@ -168,6 +178,7 @@ func (x *Generator) Generate() error {
 
 		queryInclude := config.GetQueryIncludeSet()
 		queryExclude := config.GetQueryExcludeSet()
+		insertColumnExclude := config.GetInsertColumnExcludeSet()
 		include := config.GetIncludeSet()
 		exclude := config.GetExcludeSet()
 
@@ -188,11 +199,12 @@ func (x *Generator) Generate() error {
 				defer file.Close()
 
 				ctx := Context{
-					Engine:       config.Engine,
-					Schema:       schema.Name,
-					Table:        &table,
-					QueryInclude: queryInclude,
-					QueryExclude: queryExclude,
+					Engine:              config.Engine,
+					Schema:              schema.Name,
+					Table:               &table,
+					QueryInclude:        queryInclude,
+					QueryExclude:        queryExclude,
+					InsertColumnExclude: insertColumnExclude,
 				}
 				// Execute template into buffer, then squeeze blank lines
 				var buffer bytes.Buffer

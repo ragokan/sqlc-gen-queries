@@ -231,6 +231,47 @@ var _ = Describe("Generator", func() {
 			}
 		})
 
+		It("excludes configured columns from insert queries", func() {
+			dir := generator.Config.SQL[0].Queries
+			generator.Config.SQL[0].Codegen = []sqlc.Codegen{
+				{
+					Plugin: "gen-queries",
+					Out:    dir,
+					Options: sqlc.CodegenOptions{
+						InsertColumns: sqlc.ColumnOptions{
+							Exclude: []string{"id"},
+						},
+					},
+				},
+			}
+
+			Expect(generator.Generate()).NotTo(HaveOccurred())
+
+			content, err := os.ReadFile(filepath.Join(dir, "users.sql"))
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(string(content)).To(ContainSubstring(`-- name: InsertUser :one
+INSERT INTO users (
+    email,
+    name
+) VALUES (
+    sqlc.arg(email),
+    sqlc.narg(name)
+)
+RETURNING *;`))
+			Expect(string(content)).To(ContainSubstring(`-- name: ExecInsertUser :exec
+INSERT INTO users (
+    email,
+    name
+) VALUES (
+    sqlc.arg(email),
+    sqlc.narg(name)
+);`))
+			Expect(string(content)).NotTo(ContainSubstring(`-- name: InsertUser :one
+INSERT INTO users (
+    id,`))
+		})
+
 		When("the queries directory does not exist", func() {
 			It("returns an error", func() {
 				for index := range generator.Config.SQL {

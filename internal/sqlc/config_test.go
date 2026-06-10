@@ -27,6 +27,7 @@ var _ = Describe("Config", func() {
 			Expect(opts.Queries.Include).To(HaveLen(2))
 			Expect(opts.Queries.Include).To(ContainElements("CopyUsers", "GetUserByEmail"))
 			Expect(opts.Tables.Exclude).To(ContainElement("posts"))
+			Expect(opts.InsertColumns.Exclude).To(ContainElements("id", "users.created_at", "public.users.updated_at"))
 		})
 
 		When("the file does not exist", func() {
@@ -74,6 +75,9 @@ var _ = Describe("Config", func() {
 						Options: sqlc.CodegenOptions{
 							Queries: sqlc.QueryOptions{Include: []string{"ListUsers", "CopyUsers"}},
 							Tables:  sqlc.TableOptions{Exclude: []string{"audit_logs"}},
+							InsertColumns: sqlc.ColumnOptions{
+								Exclude: []string{"id", "created_at", "updated_at"},
+							},
 						},
 					},
 				},
@@ -82,6 +86,7 @@ var _ = Describe("Config", func() {
 			Expect(opts.Queries.Include).To(HaveLen(2))
 			Expect(opts.Queries.Include).To(ContainElements("ListUsers", "CopyUsers"))
 			Expect(opts.Tables.Exclude).To(ContainElement("audit_logs"))
+			Expect(opts.InsertColumns.Exclude).To(ContainElements("id", "created_at", "updated_at"))
 		})
 	})
 
@@ -240,6 +245,37 @@ var _ = Describe("Config", func() {
 			Expect(includeSet["users"]).To(BeTrue())
 			Expect(includeSet["analytics.events"]).To(BeTrue())
 			Expect(includeSet["posts"]).To(BeFalse())
+		})
+	})
+
+	Describe("SQL.GetInsertColumnExcludeSet", func() {
+		It("returns an empty map when codegen is nil", func() {
+			sql := sqlc.SQL{}
+			excludeSet := sql.GetInsertColumnExcludeSet()
+			Expect(excludeSet).NotTo(BeNil())
+			Expect(excludeSet).To(BeEmpty())
+		})
+
+		It("returns a map with excluded insert column names", func() {
+			sql := sqlc.SQL{
+				Codegen: []sqlc.Codegen{
+					{
+						Plugin: "gen-queries",
+						Out:    "out",
+						Options: sqlc.CodegenOptions{
+							InsertColumns: sqlc.ColumnOptions{
+								Exclude: []string{"id", "todos.created_at", "public.todos.updated_at"},
+							},
+						},
+					},
+				},
+			}
+			excludeSet := sql.GetInsertColumnExcludeSet()
+			Expect(excludeSet).To(HaveLen(3))
+			Expect(excludeSet["id"]).To(BeTrue())
+			Expect(excludeSet["todos.created_at"]).To(BeTrue())
+			Expect(excludeSet["public.todos.updated_at"]).To(BeTrue())
+			Expect(excludeSet["title"]).To(BeFalse())
 		})
 	})
 })

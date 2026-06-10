@@ -27,6 +27,8 @@ var _ = Describe("Template", func() {
 			"is_fk_index": func(args ...any) bool { return false },
 			// Query selection function
 			"should_generate": func(args ...any) bool { return false },
+			// Insert column filtering
+			"insert_columns": func(args ...any) []any { return nil },
 		}
 
 		It("opens and parses template successfully", func() {

@@ -18,3 +18,8 @@ sql:
             include:
               - "CopyUsers"
               - "GetUserByEmail"
+          insert_columns:
+            exclude:
+              - "id"
+              - "users.created_at"
+              - "public.users.updated_at"

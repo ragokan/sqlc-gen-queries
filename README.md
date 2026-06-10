@@ -71,6 +71,11 @@ sql:
               - "CopyUsers"
             exclude:
               - "DeleteUser"
+          insert_columns:
+            exclude:
+              - "id"
+              - "created_at"
+              - "updated_at"
 ```
 
 Use `options.tables` to control which tables get query files. Entries may be
@@ -94,6 +99,12 @@ are query names (e.g. `GetUser`, `ListPostsByTitle`).
 > **Note:** `options.queries` is an object (`include`/`exclude`). The older flat
 > list form (`queries: ["CopyUsers"]`) is no longer supported — move those
 > entries under `queries.include`.
+
+Use `options.insert_columns.exclude` to remove database-owned columns from
+generated `INSERT`, batch insert, and `COPY` queries. Entries may be plain
+column names (`id`), table-qualified names (`users.id`), or schema-qualified
+names (`auth.users.id`). This is useful for columns with database defaults such
+as generated IDs and timestamps.
 
 ### Default queries (always generated)
 
