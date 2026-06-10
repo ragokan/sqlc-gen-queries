@@ -23,3 +23,8 @@ sql:
               - "id"
               - "users.created_at"
               - "public.users.updated_at"
+          update_columns:
+            exclude:
+              - "created_at"
+              - "users.updated_at"
+              - "public.users.deleted_at"

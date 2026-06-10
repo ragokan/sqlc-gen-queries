@@ -36,6 +36,7 @@ func (x *Generator) Generate() error {
 		QueryInclude        map[string]bool
 		QueryExclude        map[string]bool
 		InsertColumnExclude map[string]bool
+		UpdateColumnExclude map[string]bool
 	}
 
 	opts := map[string]any{
@@ -157,7 +158,17 @@ func (x *Generator) Generate() error {
 		"insert_columns": func(ctx Context) []Column {
 			columns := make([]Column, 0, len(ctx.Table.Columns))
 			for _, column := range ctx.Table.Columns {
-				if insertColumnSelected(ctx.InsertColumnExclude, ctx.Schema, ctx.Table.Name, column.Name) {
+				if columnSelected(ctx.InsertColumnExclude, ctx.Schema, ctx.Table.Name, column.Name) {
+					columns = append(columns, column)
+				}
+			}
+			return columns
+		},
+		"update_columns": func(ctx Context) []Column {
+			tableColumns := ctx.Table.GetNonPrimaryKeyColumns()
+			columns := make([]Column, 0, len(tableColumns))
+			for _, column := range tableColumns {
+				if columnSelected(ctx.UpdateColumnExclude, ctx.Schema, ctx.Table.Name, column.Name) {
 					columns = append(columns, column)
 				}
 			}
@@ -179,6 +190,7 @@ func (x *Generator) Generate() error {
 		queryInclude := config.GetQueryIncludeSet()
 		queryExclude := config.GetQueryExcludeSet()
 		insertColumnExclude := config.GetInsertColumnExcludeSet()
+		updateColumnExclude := config.GetUpdateColumnExcludeSet()
 		include := config.GetIncludeSet()
 		exclude := config.GetExcludeSet()
 
@@ -205,6 +217,7 @@ func (x *Generator) Generate() error {
 					QueryInclude:        queryInclude,
 					QueryExclude:        queryExclude,
 					InsertColumnExclude: insertColumnExclude,
+					UpdateColumnExclude: updateColumnExclude,
 				}
 				// Execute template into buffer, then squeeze blank lines
 				var buffer bytes.Buffer

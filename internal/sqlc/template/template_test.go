@@ -29,6 +29,8 @@ var _ = Describe("Template", func() {
 			"should_generate": func(args ...any) bool { return false },
 			// Insert column filtering
 			"insert_columns": func(args ...any) []any { return nil },
+			// Update column filtering
+			"update_columns": func(args ...any) []any { return nil },
 		}
 
 		It("opens and parses template successfully", func() {

@@ -28,6 +28,7 @@ var _ = Describe("Config", func() {
 			Expect(opts.Queries.Include).To(ContainElements("CopyUsers", "GetUserByEmail"))
 			Expect(opts.Tables.Exclude).To(ContainElement("posts"))
 			Expect(opts.InsertColumns.Exclude).To(ContainElements("id", "users.created_at", "public.users.updated_at"))
+			Expect(opts.UpdateColumns.Exclude).To(ContainElements("created_at", "users.updated_at", "public.users.deleted_at"))
 		})
 
 		When("the file does not exist", func() {
@@ -78,6 +79,9 @@ var _ = Describe("Config", func() {
 							InsertColumns: sqlc.ColumnOptions{
 								Exclude: []string{"id", "created_at", "updated_at"},
 							},
+							UpdateColumns: sqlc.ColumnOptions{
+								Exclude: []string{"created_at", "updated_at"},
+							},
 						},
 					},
 				},
@@ -87,6 +91,7 @@ var _ = Describe("Config", func() {
 			Expect(opts.Queries.Include).To(ContainElements("ListUsers", "CopyUsers"))
 			Expect(opts.Tables.Exclude).To(ContainElement("audit_logs"))
 			Expect(opts.InsertColumns.Exclude).To(ContainElements("id", "created_at", "updated_at"))
+			Expect(opts.UpdateColumns.Exclude).To(ContainElements("created_at", "updated_at"))
 		})
 	})
 
@@ -275,6 +280,37 @@ var _ = Describe("Config", func() {
 			Expect(excludeSet["id"]).To(BeTrue())
 			Expect(excludeSet["todos.created_at"]).To(BeTrue())
 			Expect(excludeSet["public.todos.updated_at"]).To(BeTrue())
+			Expect(excludeSet["title"]).To(BeFalse())
+		})
+	})
+
+	Describe("SQL.GetUpdateColumnExcludeSet", func() {
+		It("returns an empty map when codegen is nil", func() {
+			sql := sqlc.SQL{}
+			excludeSet := sql.GetUpdateColumnExcludeSet()
+			Expect(excludeSet).NotTo(BeNil())
+			Expect(excludeSet).To(BeEmpty())
+		})
+
+		It("returns a map with excluded update column names", func() {
+			sql := sqlc.SQL{
+				Codegen: []sqlc.Codegen{
+					{
+						Plugin: "gen-queries",
+						Out:    "out",
+						Options: sqlc.CodegenOptions{
+							UpdateColumns: sqlc.ColumnOptions{
+								Exclude: []string{"created_at", "todos.updated_at", "public.todos.user_id"},
+							},
+						},
+					},
+				},
+			}
+			excludeSet := sql.GetUpdateColumnExcludeSet()
+			Expect(excludeSet).To(HaveLen(3))
+			Expect(excludeSet["created_at"]).To(BeTrue())
+			Expect(excludeSet["todos.updated_at"]).To(BeTrue())
+			Expect(excludeSet["public.todos.user_id"]).To(BeTrue())
 			Expect(excludeSet["title"]).To(BeFalse())
 		})
 	})

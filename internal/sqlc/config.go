@@ -74,6 +74,7 @@ type CodegenOptions struct {
 	Queries       QueryOptions  `yaml:"queries,omitempty"`
 	Tables        TableOptions  `yaml:"tables,omitempty"`
 	InsertColumns ColumnOptions `yaml:"insert_columns,omitempty"`
+	UpdateColumns ColumnOptions `yaml:"update_columns,omitempty"`
 }
 
 // QueryOptions holds query-level filtering options for the gen-queries plugin.
@@ -166,6 +167,18 @@ func (s *SQL) GetInsertColumnExcludeSet() map[string]bool {
 	return excludeSet
 }
 
+// GetUpdateColumnExcludeSet returns the deny-list of columns to skip in
+// generated UPDATE statements. Entries may be column names, table-qualified
+// column names, or schema-qualified table column names.
+func (s *SQL) GetUpdateColumnExcludeSet() map[string]bool {
+	opts := s.GetOptions()
+	excludeSet := make(map[string]bool, len(opts.UpdateColumns.Exclude))
+	for _, name := range opts.UpdateColumns.Exclude {
+		excludeSet[name] = true
+	}
+	return excludeSet
+}
+
 // tableSelected reports whether a table should have query files generated.
 // Exclude always takes precedence over include; an empty include set matches
 // every table. Both sets are checked against the unqualified table name and
@@ -181,7 +194,7 @@ func tableSelected(includeSet, excludeSet map[string]bool, schema, table string)
 	return includeSet[table] || includeSet[qualified]
 }
 
-func insertColumnSelected(excludeSet map[string]bool, schema, table, column string) bool {
+func columnSelected(excludeSet map[string]bool, schema, table, column string) bool {
 	if excludeSet[column] {
 		return false
 	}
